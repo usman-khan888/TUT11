@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext(null);
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 export const AuthProvider = ({ children }) => {
     const navigate = useNavigate();
@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
 
     const fetchUserData = async (token) => {
         try {
-            const response = await fetch(`${BACKEND_URL}/user/me`, {
+            const response = await fetch(`${VITE_BACKEND_URL}/user/me`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (username, password) => {
         try {
-            const response = await fetch(`${BACKEND_URL}/login`, {
+            const response = await fetch(`${VITE_BACKEND_URL}/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }) => {
 
     const register = async ({ username, firstname, lastname, password }) => {
         try {
-            const response = await fetch(`${BACKEND_URL}/register`, {
+            const response = await fetch(`${VITE_BACKEND_URL}/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
