@@ -8,41 +8,42 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 export const AuthProvider = ({ children }) => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
+    const [authChecked, setAuthChecked] = useState(false);
 
-    // Check authentication status on initial load
+    // Enhanced auth check with loading state
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            fetchUserData(token);
-        } else {
-            setUser(null);
-        }
-    }, []);
-
-    const fetchUserData = async (token) => {
-        try {
-            const response = await fetch(`${BACKEND_URL}/user/me`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setUser(data.user);
-            } else {
-                // Token might be invalid/expired
-                localStorage.removeItem('token');
-                setUser(null);
+        const verifyAuth = async () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                setAuthChecked(true);
+                return;
             }
-        } catch (error) {
-            console.error('Failed to fetch user data:', error);
-            localStorage.removeItem('token');
-            setUser(null);
-        }
-    };
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/user/me`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setUser(data.user);
+                } else {
+                    localStorage.removeItem('token');
+                }
+            } catch (error) {
+                console.error('Auth verification error:', error);
+                localStorage.removeItem('token');
+            } finally {
+                setAuthChecked(true);
+            }
+        };
+
+        verifyAuth();
+    }, []);
 
     const login = async (username, password) => {
         try {
@@ -61,9 +62,22 @@ export const AuthProvider = ({ children }) => {
 
             const { token } = await response.json();
             localStorage.setItem('token', token);
-            await fetchUserData(token);
-            navigate("/profile");
-            return null;
+            
+            // Immediately fetch user data after login
+            const userResponse = await fetch(`${BACKEND_URL}/user/me`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (userResponse.ok) {
+                const userData = await userResponse.json();
+                setUser(userData.user);
+                navigate("/profile");
+                return null;
+            }
+            return 'Failed to fetch user data after login';
         } catch (error) {
             console.error('Login error:', error);
             return 'Network error occurred';
@@ -100,7 +114,13 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, register }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            authChecked,
+            login, 
+            logout, 
+            register 
+        }}>
             {children}
         </AuthContext.Provider>
     );
